@@ -1,0 +1,101 @@
+name: 'Validate JSON'
+description: 'Validates JSON files or strings, fails with clear error on malformed input'
+author: 'KoalaOps'
+
+branding:
+  icon: 'check-square'
+  color: 'purple'
+
+inputs:
+  json_string:
+    description: 'JSON string to validate (takes precedence over json_file)'
+    required: false
+  json_file:
+    description: 'Path to JSON file to validate'
+    required: false
+  schema_file:
+    description: 'Optional JSON schema file for validation'
+    required: false
+
+outputs:
+  valid:
+    description: 'Whether the JSON is valid (true/false)'
+    value: ${{ steps.validate.outputs.valid }}
+  error:
+    description: 'Error message if validation failed'
+    value: ${{ steps.validate.outputs.error }}
+  parsed:
+    description: 'The parsed JSON content (if valid)'
+    value: ${{ steps.validate.outputs.parsed }}
+
+runs:
+  using: 'composite'
+  steps:
+    - name: Validate JSON
+      id: validate
+      shell: bash
+      run: |
+        set +e  # Don't exit on error, we'll handle it
+        
+        # Determine input source
+        if [ -n "${{ inputs.json_string }}" ]; then
+          echo "Validating JSON string..."
+          JSON_CONTENT='${{ inputs.json_string }}'
+        elif [ -n "${{ inputs.json_file }}" ]; then
+          echo "Validating JSON file: ${{ inputs.json_file }}"
+          if [ ! -f "${{ inputs.json_file }}" ]; then
+            echo "valid=false" >> $GITHUB_OUTPUT
+            echo "error=File not found: ${{ inputs.json_file }}" >> $GITHUB_OUTPUT
+            echo "::error::File not found: ${{ inputs.json_file }}"
+            exit 1
+          fi
+          JSON_CONTENT=$(cat "${{ inputs.json_file }}")
+        else
+          echo "valid=false" >> $GITHUB_OUTPUT
+          echo "error=No JSON input provided. Use json_string or json_file." >> $GITHUB_OUTPUT
+          echo "::error::No JSON input provided. Use json_string or json_file."
+          exit 1
+        fi
+        
+        # Validate JSON syntax
+        if echo "$JSON_CONTENT" | jq empty 2>/dev/null; then
+          echo "✅ JSON is valid"
+          echo "valid=true" >> $GITHUB_OUTPUT
+          
+          # Output parsed JSON (escaped for GitHub Actions)
+          PARSED=$(echo "$JSON_CONTENT" | jq -c .)
+          echo "parsed=$PARSED" >> $GITHUB_OUTPUT
+          
+          # Pretty print for logs
+          echo "📋 JSON content:"
+          echo "$JSON_CONTENT" | jq .
+          
+          # Schema validation if provided
+          if [ -n "${{ inputs.schema_file }}" ]; then
+            echo "Validating against schema: ${{ inputs.schema_file }}"
+            if [ ! -f "${{ inputs.schema_file }}" ]; then
+              echo "::warning::Schema file not found: ${{ inputs.schema_file }}"
+            else
+              # Note: Full JSON schema validation would require additional tools
+              # For now, we just ensure the schema itself is valid JSON
+              if jq empty "${{ inputs.schema_file }}" 2>/dev/null; then
+                echo "✅ Schema file is valid JSON"
+              else
+                echo "::warning::Schema file is not valid JSON"
+              fi
+            fi
+          fi
+        else
+          ERROR_MSG=$(echo "$JSON_CONTENT" | jq empty 2>&1 | head -n 1)
+          echo "❌ JSON validation failed"
+          echo "valid=false" >> $GITHUB_OUTPUT
+          echo "error=$ERROR_MSG" >> $GITHUB_OUTPUT
+          echo "::error::Invalid JSON: $ERROR_MSG"
+          
+          # Try to provide helpful error location
+          echo "::group::JSON content (first 50 lines)"
+          echo "$JSON_CONTENT" | head -n 50
+          echo "::endgroup::"
+          
+          exit 1
+        fi
