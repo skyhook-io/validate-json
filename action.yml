@@ -1,6 +1,6 @@
 name: 'JSON Syntax Validator'
 description: 'Validates JSON files or strings, fails with clear error on malformed input'
-author: 'KoalaOps'
+author: 'Skyhook'
 
 branding:
   icon: 'check-square'

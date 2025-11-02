@@ -6,12 +6,12 @@ Validates JSON files or strings, providing clear error messages on malformed inp
 
 ```yaml
 - name: Validate options file
-  uses: KoalaOps/validate-json@v1
+  uses: skyhook-io/validate-json@v1
   with:
     json_file: .koala/build.targets.json
 
 - name: Validate JSON string
-  uses: KoalaOps/validate-json@v1
+  uses: skyhook-io/validate-json@v1
   with:
     json_string: ${{ inputs.options_json }}
 ```
@@ -39,7 +39,7 @@ Validates JSON files or strings, providing clear error messages on malformed inp
 ### Validate configuration file
 ```yaml
 - name: Validate build configuration
-  uses: KoalaOps/validate-json@v1
+  uses: skyhook-io/validate-json@v1
   with:
     json_file: .koala/build.targets.json
   continue-on-error: false  # Fail workflow on invalid JSON
@@ -49,7 +49,7 @@ Validates JSON files or strings, providing clear error messages on malformed inp
 ```yaml
 - name: Validate and parse config
   id: config
-  uses: KoalaOps/validate-json@v1
+  uses: skyhook-io/validate-json@v1
   with:
     json_file: config.json
 
