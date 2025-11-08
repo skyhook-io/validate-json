@@ -1,4 +1,4 @@
-name: 'JSON Syntax Validator'
+name: 'Skyhook JSON Validator'
 description: 'Validates JSON files or strings, fails with clear error on malformed input'
 author: 'Skyhook'
 
